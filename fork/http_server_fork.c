@@ -17,6 +17,7 @@ int main(int argc, char **argv)
 	time_t ticks;
 	int n, f, connfd, sock[20];
 	char *yes = "lo";
+	int ok = 1;
 	char sendBuff[256];
 
 	memset(&hints, 0, sizeof(hints));
@@ -42,6 +43,10 @@ int main(int argc, char **argv)
 			perror("setsockopt");
 			exit(EXIT_FAILURE);
 		}
+		if (setsockopt(sock[n], SOL_SOCKET, SO_REUSEADDR, (const char*)&ok, sizeof(ok)) < 0) {
+			perror("setsockopt");
+			exit(EXIT_FAILURE);
+		}
 		if (bind(sock[n], res->ai_addr, res->ai_addrlen) < 0) {
 			perror("bind");
 			exit(EXIT_FAILURE);
@@ -51,11 +56,11 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 		while(1) {
-  		connfd = accept(sock[n], (struct sockaddr*)res->ai_addr, sizeof(res->ai_addr)); 
+  		connfd = accept(sock[n], (struct sockaddr*)NULL, NULL); 
       
-			//ticks = time(NULL);
-      //snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
-      snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", "hello");
+			ticks = time(NULL);
+      snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
+      //snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", "hello");
       write(connfd, sendBuff, strlen(sendBuff)); 
 
       close(connfd);
