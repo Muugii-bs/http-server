@@ -15,13 +15,14 @@ int main(int argc, char **argv)
 {
 	struct addrinfo hints, *res0, *res;
 	time_t ticks;
-	int n, f, connfd, sock[100];
+	int n, f, connfd, sock[100], read_flag;
 	int no = 0;
 	int ok = 1;
 	pid_t pid;
-	char sendBuff[256];
 	char buf[INET_ADDRSTRLEN];
 	char buf1[INET6_ADDRSTRLEN];
+	char readBuff[256];
+	char sendBuff[256];
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -70,12 +71,23 @@ int main(int argc, char **argv)
 			}
 			while(1) {
 				connfd = accept(sock[n], (struct sockaddr*)NULL, NULL); 
-				
+				/*				
 				ticks = time(NULL);
 				snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
 				write(connfd, sendBuff, strlen(sendBuff)); 
-
-				close(connfd);
+				*/
+				write(connfd, "HELLO\n", strlen("HELLO\n")); 
+				memset(readBuff,	0, sizeof(readBuff));
+				while(read_flag =	read(connfd,	readBuff,	sizeof(readBuff))){
+					if (read_flag > 0) {
+						printf("read: %s\n", readBuff);
+					} else {
+						perror("read");
+						exit(EXIT_FAILURE);
+					}
+					write(connfd, readBuff, strlen(readBuff)); 
+				}
+				//close(connfd);
 				sleep(1);
 			}
 		}
