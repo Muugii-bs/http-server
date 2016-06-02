@@ -16,6 +16,7 @@ void talk_ipv4_server(char* server_add)
 	int write_flag;
 	int conn_flag;
 	char buf[256];
+	char sendBuff[256];
 	struct sockaddr_in server;
 
 	sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -42,15 +43,23 @@ void talk_ipv4_server(char* server_add)
 		exit(EXIT_FAILURE);
 	}
 
-	memset(buf,	0, sizeof(buf));
-	read_flag =	read(sock,	buf,	sizeof(buf));
-	printf("Length of the message: %d\n", read_flag);
-	if(read_flag < 0) {
-		perror("read");
-		exit(EXIT_FAILURE);
+	while(1) {
+		memset(buf,	0, sizeof(buf));
+		read_flag =	read(sock,	buf,	sizeof(buf));
+		if(read_flag < 0) {
+			perror("read");
+			exit(EXIT_FAILURE);
+		}
+		printf("get: %s\n", buf);
+		scanf("%s", sendBuff);
+		write(sock, sendBuff, strlen(sendBuff)); 
+		if(read_flag < 0) {
+			perror("write");
+			exit(EXIT_FAILURE);
+		}
+		//sleep(1);
 	}
 
-	printf("Received message: %s", buf);
 	close(sock);
 }
 

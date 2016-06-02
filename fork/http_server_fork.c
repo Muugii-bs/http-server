@@ -8,8 +8,35 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <signal.h>
+#include <string.h>
 
-#define LISTENQ 10
+#define LISTENQ 100
+
+void signal_handler (int sig) 
+{
+	int status, retval;
+	do {
+	 retval = waitpid(-1, &status, WNOHANG);
+	} while (retval > 0);
+	signal(SIGCHLD, signal_handler);
+}
+
+char * reply (char * text)
+{	
+	char *pos;
+	char *ret;
+	int i = 1;
+	pos = strtok(text, "DUUHNAA=");
+	while (pos != NULL) {
+		if (i == 2) {
+			ret = pos;
+		}
+		pos = strtok (NULL, "DUUHNAA=");
+		i++;
+	}
+	return ret;
+}
 
 int main(int argc, char **argv) 
 {
@@ -22,7 +49,8 @@ int main(int argc, char **argv)
 	char buf[INET_ADDRSTRLEN];
 	char buf1[INET6_ADDRSTRLEN];
 	char readBuff[256];
-	char sendBuff[256];
+	char *tmp;
+	char sendBuff[1024];
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -64,36 +92,53 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-		if ( (pid = fork() ) == 0 ) {
+		if ((pid = fork()) == 0) {
 			if (listen(sock[n], LISTENQ) < 0) {
 				perror("listen");
 				exit(EXIT_FAILURE);
 			}
+			signal (SIGCHLD, signal_handler); 
 			while(1) {
 				connfd = accept(sock[n], (struct sockaddr*)NULL, NULL); 
-				/*				
-				ticks = time(NULL);
-				snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
-				write(connfd, sendBuff, strlen(sendBuff)); 
-				*/
-				write(connfd, "HELLO\n", strlen("HELLO\n")); 
-				memset(readBuff,	0, sizeof(readBuff));
-				while(read_flag =	read(connfd,	readBuff,	sizeof(readBuff))){
-					if (read_flag > 0) {
-						printf("read: %s\n", readBuff);
-					} else {
-						perror("read");
-						exit(EXIT_FAILURE);
+				if ((pid = fork()) == 0) {
+					close(sock[n]);
+					memset(sendBuff, 0, sizeof(sendBuff));
+					snprintf(sendBuff, sizeof(sendBuff), 
+							"HTTP/1.0 200 OK\r\n"
+							"Content-Type: text/html\r\n"
+							"\r\n"
+							"<font folor=red><h1>Hello World</h1></font>\r\n"
+							"<form action=\"http://login2.sekiya-lab.info:31601\" method=\"post\">"
+							"Name <input type=\"text\" name=\"DUUHNAA\"><br>"
+							"<input type=\"submit\" value=\"Submit\"></form>\r\n"
+							"Your name is : <br>\r\n");
+					write(connfd, sendBuff, (int)strlen(sendBuff)); 
+					memset(readBuff,	0, sizeof(readBuff));
+					while(read_flag =	read(connfd,	readBuff,	sizeof(readBuff))){
+						if (read_flag > 0) {
+						} else {
+							perror("read");
+							exit(EXIT_FAILURE);
+						}
+						//tmp = reply(readBuff);
+						write(connfd, readBuff, strlen(readBuff)); 
+						memset(readBuff,	0, sizeof(readBuff));
 					}
-					write(connfd, readBuff, strlen(readBuff)); 
+					exit(0);
+				} else if (pid > 0) {
+					close(connfd);
+				} else if (pid < 0) {
+					perror("fork child");
+					exit(EXIT_FAILURE);
 				}
-				//close(connfd);
-				sleep(1);
 			}
+		} else if (pid > 0 ) {
+			res = res->ai_next;
+			n++;
+		} else {
+			perror("fork parent");
+			exit(EXIT_FAILURE);
 		}
-			
-		res = res->ai_next;
-		n++;
 	}
 
 	freeaddrinfo(res0);
