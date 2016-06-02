@@ -16,7 +16,6 @@ int main(int argc, char **argv)
 	struct addrinfo hints, *res0, *res;
 	time_t ticks;
 	int n, f, connfd, sock[100];
-	//char *yes = "ens160";
 	int no = 0;
 	int ok = 1;
 	pid_t pid;
