@@ -16,9 +16,11 @@ int main(int argc, char **argv)
 	struct addrinfo hints, *res0, *res;
 	time_t ticks;
 	int n, f, connfd, sock[20];
-	char *yes = "lo";
+	char *yes = "ens160";
 	int ok = 1;
 	char sendBuff[256];
+	char buf[INET_ADDRSTRLEN];
+	char buf1[INET6_ADDRSTRLEN];
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -43,6 +45,20 @@ int main(int argc, char **argv)
 			perror("setsockopt");
 			exit(EXIT_FAILURE);
 		}
+		if ( res->ai_family == AF_INET) {
+			printf("here1\n");
+			printf("ipv4 address : %s\n", inet_ntop(res->ai_family, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, buf, INET_ADDRSTRLEN));
+		} else if ( res->ai_family == AF_INET6) {
+			printf("here2\n");
+			printf("ipv6 address : %s\n", inet_ntop(res->ai_family, &((struct sockaddr_in6 *)(res->ai_addr))->sin6_addr, buf1, INET6_ADDRSTRLEN));
+		}
+
+		/*
+		if (setsockopt(sock[n], IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes)) < 0) {
+			perror("setsockopt");
+			exit(EXIT_FAILURE);
+		}
+		*/
 		if (setsockopt(sock[n], SOL_SOCKET, SO_REUSEADDR, (const char*)&ok, sizeof(ok)) < 0) {
 			perror("setsockopt");
 			exit(EXIT_FAILURE);
@@ -60,7 +76,6 @@ int main(int argc, char **argv)
       
 			ticks = time(NULL);
       snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
-      //snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", "hello");
       write(connfd, sendBuff, strlen(sendBuff)); 
 
       close(connfd);
