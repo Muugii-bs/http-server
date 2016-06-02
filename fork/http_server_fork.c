@@ -80,13 +80,8 @@ int main(int argc, char **argv)
 			}
 		}
 			
-		printf("here1\n");
 		res = res->ai_next;
-		printf("here2\n");
 		n++;
-		printf("here3\n");
-		/*
-		*/
 	}
 
 	freeaddrinfo(res0);
