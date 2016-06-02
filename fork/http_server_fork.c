@@ -8,18 +8,37 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <signal.h>
 
 #define LISTENQ 10
+
+void sig_child (int signo)
+{
+	int pid, status;
+	pid = wait(&status);
+	printf("PID: %d, terminated\n", pid);
+}
+
+void signal_handler (int sig)
+{
+	int status, retval;
+	do {
+		 retval = waitpid(-1, &status, WNOHANG); 
+	} while (retval > 0);
+	signal(SIGCHLD, sig_child); 
+}
 
 int main(int argc, char **argv) 
 {
 	struct addrinfo hints, *res0, *res;
 	time_t ticks;
-	int n, f, connfd, sock[100];
+	int n, f, active_conn, sock[100];
 	int no = 0;
 	int ok = 1;
+	int status, read_flag;
 	pid_t pid;
 	char sendBuff[256];
+	char readBuff[256];
 	char buf[INET_ADDRSTRLEN];
 	char buf1[INET6_ADDRSTRLEN];
 
@@ -63,30 +82,38 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-		if ( (pid = fork() ) == 0 ) {
+		//signal (SIGCHLD, signal_handler); 
+
+		//if ( (pid = fork() ) == 0 ) {
 			if (listen(sock[n], LISTENQ) < 0) {
 				perror("listen");
 				exit(EXIT_FAILURE);
 			}
 			while(1) {
-				connfd = accept(sock[n], (struct sockaddr*)NULL, NULL); 
-				
-				ticks = time(NULL);
-				snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
-				write(connfd, sendBuff, strlen(sendBuff)); 
-
-				close(connfd);
-				sleep(1);
+				active_conn = accept(sock[n], (struct sockaddr*)NULL, NULL); 
+				write(active_conn, "HELLO\n", strlen("HELLO\n")); 
+				//ticks = time(NULL);
+				//snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
+				memset(readBuff,	0, sizeof(readBuff));
+				while(read_flag =	read(active_conn,	readBuff,	sizeof(readBuff))){
+				if (read_flag > 0) {
+					printf("read: %s\n", readBuff);
+				} else {
+					perror("read");
+					exit(EXIT_FAILURE);
+				}
+				write(active_conn, readBuff, strlen(readBuff)); 
 			}
-		}
+				//sleep(1);
+			}
+		//} else {
+		//	wait(&status);
+		//	perror("fork: parent");
+		//	exit(EXIT_FAILURE);
+		//}
 			
-		printf("here1\n");
 		res = res->ai_next;
-		printf("here2\n");
 		n++;
-		printf("here3\n");
-		/*
-		*/
 	}
 
 	freeaddrinfo(res0);
