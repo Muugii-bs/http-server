@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 			perror("bind");
 			exit(EXIT_FAILURE);
 		}
-
+		signal (SIGCHLD, signal_handler); 
 		if ((pid = fork()) == 0) {
 			if (listen(sock[n], LISTENQ) < 0) {
 				perror("listen");
@@ -130,6 +130,7 @@ int main(int argc, char **argv)
 			}
 			while(1) {
 				connfd = accept(sock[n], (struct sockaddr*)NULL, NULL); 
+				//close(sock[n]);
 				if (connfd == -1) {
 					perror("thread accept");
 					exit(EXIT_FAILURE);

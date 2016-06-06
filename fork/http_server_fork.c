@@ -42,9 +42,7 @@ int main(int argc, char **argv)
 {
 	struct addrinfo hints, *res0, *res;
 	time_t ticks;
-	int n, f, connfd, sock[100], read_flag;
-	int no = 0;
-	int ok = 1;
+	int n, f, connfd, sock[100], read_flag, no = 0, ok = 1, status;
 	pid_t pid;
 	char buf[INET_ADDRSTRLEN];
 	char buf1[INET6_ADDRSTRLEN];
@@ -91,7 +89,7 @@ int main(int argc, char **argv)
 			perror("bind");
 			exit(EXIT_FAILURE);
 		}
-
+		signal (SIGCHLD, signal_handler); 
 		if ((pid = fork()) == 0) {
 			if (listen(sock[n], LISTENQ) < 0) {
 				perror("listen");
@@ -110,19 +108,17 @@ int main(int argc, char **argv)
 							"<font folor=red><h1>Hello World</h1></font>\r\n"
 							"<form action=\"http://login2.sekiya-lab.info:31601\" method=\"post\">"
 							"Name <input type=\"text\" name=\"DUUHNAA\"><br>"
-							"<input type=\"submit\" value=\"Submit\"></form>\r\n"
-							"Your name is : <br>\r\n");
+							"<input type=\"submit\" value=\"Submit\"></form>\r\n");
 					write(connfd, sendBuff, (int)strlen(sendBuff)); 
 					memset(readBuff,	0, sizeof(readBuff));
 					while(read_flag =	read(connfd,	readBuff,	sizeof(readBuff))){
 						if (read_flag > 0) {
+							write(connfd, "<font color=\"red\">I got your message </font>", strlen("<font color=\"red\">I got your message </font>")); 
+							memset(readBuff,	0, sizeof(readBuff));
 						} else {
 							perror("read");
 							exit(EXIT_FAILURE);
 						}
-						//tmp = reply(readBuff);
-						write(connfd, readBuff, strlen(readBuff)); 
-						memset(readBuff,	0, sizeof(readBuff));
 					}
 					exit(0);
 				} else if (pid > 0) {
@@ -140,7 +136,7 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 	}
-
 	freeaddrinfo(res0);
+	wait(&status);
 	return 0;
 }
